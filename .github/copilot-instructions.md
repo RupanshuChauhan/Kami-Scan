@@ -1,0 +1,3 @@
+<!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
+
+This is a Next.js TypeScript project for "KamiScan". Please generate code for a modern AI-powered PDF summarizer website with Google sign-in, in-website purchases, admin access for vaivhavchauhan2162003@gmail.com (free usage), liquify navigation bar, professional header and footer, instant touch/magic button effects, zero latency AI summarizer, user profile page with settings (logout, general, privacy).

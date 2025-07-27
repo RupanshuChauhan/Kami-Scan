@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KamiScan - AI-Powered PDF Smart Summarizer
 
-## Getting Started
+KamiScan is a modern AI-powered PDF smart summarizer website with cutting-edge features and a professional design.
 
-First, run the development server:
+## ✨ Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Zero Latency AI Processing** - Instant PDF summarization using advanced AI
+- **Google Sign-In Authentication** - Secure user authentication
+- **Admin Privileges** - Free unlimited access
+- **Liquify Navigation Bar** - Modern animated header with magic effects
+- **Professional Design** - Beautiful header and footer with gradient themes
+- **Instant Touch Effects** - Magic button animations and hover effects
+- **In-Website Purchases** - Integrated payment system for premium features
+- **User Profile System** - Complete profile management with settings
+- **Privacy Controls** - Comprehensive privacy and notification settings
+- **Usage Analytics** - Track document processing statistics
+
+## 🚀 Getting Started
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Set up environment variables:**
+   Copy `.env.local` and configure your API keys:
+   - GEMINI_API_KEY (for AI processing)
+   - GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET (for OAuth)
+   - STRIPE keys (for payments)
+
+3. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+
+4. **Open your browser:**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 🛠️ Tech Stack
+
+- **Frontend:** Next.js 15, TypeScript, Tailwind CSS
+- **Animations:** Framer Motion for smooth transitions
+- **AI Processing:** Google Gemini AI
+- **Authentication:** NextAuth.js with Google Provider
+- **Payments:** Stripe integration
+- **Icons:** Lucide React
+- **File Handling:** React Dropzone
+
+## 📁 Project Structure
+
+```
+src/
+├── app/
+│   ├── api/summarize/     # PDF processing API
+│   ├── profile/           # User profile page
+│   ├── layout.tsx         # Root layout
+│   └── page.tsx           # Homepage
+├── components/
+│   ├── Header.tsx         # Liquify navigation header
+│   ├── Footer.tsx         # Professional footer
+│   └── PDFUploader.tsx    # AI PDF processor
+└── lib/                   # Utilities and configurations
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔧 Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The application includes:
+- Responsive design for all devices
+- Dark theme with purple/blue gradients
+- Toast notifications for user feedback
+- Error handling and validation
+- SEO optimization
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🎨 Design Features
 
-## Learn More
+- **Modern Gradient Backgrounds**
+- **Liquid Animation Effects**
+- **Magic Button Interactions**
+- **Professional Typography**
+- **Instant Visual Feedback**
 
-To learn more about Next.js, take a look at the following resources:
+## 🔐 Admin Access
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The email `vaivhavchauhan2162003@gmail.com` has unlimited free access to all features.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📝 License
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT License - Built with ❤️ for intelligent document processing.
