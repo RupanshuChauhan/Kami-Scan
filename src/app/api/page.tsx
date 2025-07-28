@@ -94,7 +94,8 @@ const response = await fetch('https://api.kamiscan.com/v1/summarize', {
 });
 
 const result = await response.json();
-console.log(result.summary);`,
+// Handle the result
+displaySummary(result.summary);`,
 
     python: `import requests
 

@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion'
 import { FileText, Scale, Shield, AlertTriangle, CreditCard, Clock } from 'lucide-react'
 import Header from '../../components/Header'
-import Footer from '../../components/Footer'
 
 export default function TermsPage() {
   const sections = [

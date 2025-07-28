@@ -5,6 +5,7 @@ import { User, LogOut, Shield, Bell, CreditCard, FileText, Activity } from 'luci
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { useState } from 'react'
+import { signOut } from 'next-auth/react'
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('general')
@@ -28,7 +29,7 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     // Implement logout functionality
-    console.log('Logging out...')
+    signOut({ callbackUrl: '/' })
   }
 
   return (
@@ -127,20 +128,22 @@ export default function ProfilePage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                          <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
                             Email Address
                           </label>
                           <input
+                            id="email"
                             type="email"
                             defaultValue="john.doe@example.com"
                             className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-2">
+                          <label htmlFor="company" className="block text-sm font-medium text-gray-300 mb-2">
                             Company (Optional)
                           </label>
                           <input
+                            id="company"
                             type="text"
                             placeholder="Enter your company name"
                             className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-purple-500"
@@ -167,7 +170,12 @@ export default function ProfilePage() {
                             <p className="text-gray-400 text-sm">Allow processing of uploaded documents</p>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" className="sr-only peer" defaultChecked />
+                            <input 
+                              type="checkbox" 
+                              className="sr-only peer" 
+                              defaultChecked 
+                              aria-label="Enable data processing"
+                            />
                             <div className="w-11 h-6 bg-gray-600 rounded-full peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                           </label>
                         </div>
@@ -178,7 +186,12 @@ export default function ProfilePage() {
                             <p className="text-gray-400 text-sm">Help improve KamiScan with usage data</p>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" className="sr-only peer" defaultChecked />
+                            <input 
+                              type="checkbox" 
+                              className="sr-only peer" 
+                              defaultChecked 
+                              aria-label="Enable analytics"
+                            />
                             <div className="w-11 h-6 bg-gray-600 rounded-full peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                           </label>
                         </div>
@@ -189,7 +202,11 @@ export default function ProfilePage() {
                             <p className="text-gray-400 text-sm">Receive updates and promotional emails</p>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" className="sr-only peer" />
+                            <input 
+                              type="checkbox" 
+                              className="sr-only peer" 
+                              aria-label="Enable marketing communications"
+                            />
                             <div className="w-11 h-6 bg-gray-600 rounded-full peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                           </label>
                         </div>
@@ -207,7 +224,12 @@ export default function ProfilePage() {
                             <p className="text-gray-400 text-sm">Get notified when PDF processing is complete</p>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" className="sr-only peer" defaultChecked />
+                            <input 
+                              type="checkbox" 
+                              className="sr-only peer" 
+                              defaultChecked 
+                              aria-label="Enable processing complete notifications"
+                            />
                             <div className="w-11 h-6 bg-gray-600 rounded-full peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                           </label>
                         </div>
@@ -218,7 +240,12 @@ export default function ProfilePage() {
                             <p className="text-gray-400 text-sm">Alert when approaching monthly limits</p>
                           </div>
                           <label className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" className="sr-only peer" defaultChecked />
+                            <input 
+                              type="checkbox" 
+                              className="sr-only peer" 
+                              defaultChecked 
+                              aria-label="Enable usage limit alerts"
+                            />
                             <div className="w-11 h-6 bg-gray-600 rounded-full peer-checked:bg-purple-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
                           </label>
                         </div>
