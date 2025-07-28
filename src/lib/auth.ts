@@ -64,10 +64,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true
     },
-  },
-  pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
+    async redirect({ url, baseUrl }) {
+      // Redirect to main page after successful login
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      // Default redirect to main page
+      return baseUrl
+    },
   },
   session: {
     strategy: 'database',

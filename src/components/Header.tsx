@@ -114,7 +114,7 @@ export default function Header() {
             ) : (
               <>
                 <motion.button
-                  onClick={() => signIn('google')}
+                  onClick={() => signIn('google', { callbackUrl: '/' })}
                   className="px-4 py-2 text-purple-400 border border-purple-400 rounded-lg hover:bg-purple-400 hover:text-white transition-all duration-200"
                   variants={magicButtonVariants}
                   whileHover="hover"
@@ -123,7 +123,7 @@ export default function Header() {
                   Sign In
                 </motion.button>
                 <motion.button
-                  onClick={() => signIn('google')}
+                  onClick={() => signIn('google', { callbackUrl: '/' })}
                   className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium relative overflow-hidden"
                   variants={magicButtonVariants}
                   whileHover="hover"
@@ -190,13 +190,13 @@ export default function Header() {
                 ) : (
                   <>
                     <button 
-                      onClick={() => signIn('google')}
+                      onClick={() => signIn('google', { callbackUrl: '/' })}
                       className="px-4 py-2 text-purple-400 border border-purple-400 rounded-lg hover:bg-purple-400 hover:text-white transition-all"
                     >
                       Sign In
                     </button>
                     <button 
-                      onClick={() => signIn('google')}
+                      onClick={() => signIn('google', { callbackUrl: '/' })}
                       className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium"
                     >
                       Get Started
