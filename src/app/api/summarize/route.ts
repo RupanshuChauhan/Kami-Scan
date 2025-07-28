@@ -1,4 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { GoogleGenerativeAI } from '@google/generative-ai'
+
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+
+// Dynamic import for pdf-parse to avoid build issues
+async function parsePDF(buffer: Buffer) {
+  const pdf = await import('pdf-parse')
+  return pdf.default(buffer)
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,109 +23,75 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only PDF files are allowed' }, { status: 400 })
     }
 
-    // Simulate processing time for realistic feel
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    // Convert file to buffer for PDF parsing
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
 
-    // For demo purposes, provide an intelligent mock summary
-    // In production, you would implement actual PDF parsing and AI processing
-    const mockSummary = generateMockSummary(file.name)
+    // Extract text from PDF using dynamic import
+    const pdfData = await parsePDF(buffer)
+    const extractedText = pdfData.text
+
+    if (!extractedText || extractedText.trim().length === 0) {
+      return NextResponse.json({ 
+        error: 'Could not extract text from PDF. The file might be image-based or corrupted.' 
+      }, { status: 400 })
+    }
+
+    // Generate AI summary using Gemini
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    
+    const prompt = `Please provide a comprehensive and professional summary of the following document text. 
+    Structure your response with:
+    
+    📄 **Document Summary**
+    
+    **Key Highlights:** (3-4 main points)
+    
+    **Main Sections:** (Identify and list the primary sections/topics)
+    
+    **Critical Points:** (Important findings, conclusions, or recommendations)
+    
+    **Actionable Insights:** (What can be done based on this document)
+    
+    Keep the summary concise but informative, focusing on the most important information. Use bullet points and clear formatting.
+    
+    Document Text:
+    ${extractedText.slice(0, 10000)} ${extractedText.length > 10000 ? '...(content truncated for processing)' : ''}`
+
+    const result = await model.generateContent(prompt)
+    const aiSummary = result.response.text()
 
     return NextResponse.json({
-      summary: mockSummary,
+      summary: aiSummary,
       originalFileName: file.name,
       fileSize: file.size,
-      processedAt: new Date().toISOString()
+      textLength: extractedText.length,
+      processedAt: new Date().toISOString(),
+      aiPowered: true
     })
 
   } catch (error) {
     console.error('Error processing PDF:', error)
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('API_KEY')) {
+        return NextResponse.json(
+          { error: 'AI service configuration error. Please contact support.' },
+          { status: 500 }
+        )
+      }
+      if (error.message.includes('pdf')) {
+        return NextResponse.json(
+          { error: 'Failed to parse PDF. Please ensure the file is not corrupted.' },
+          { status: 400 }
+        )
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Failed to process PDF. Please try again.' },
       { status: 500 }
     )
   }
-}
-
-// Generate intelligent mock summary based on filename
-function generateMockSummary(filename: string): string {
-  const summaries = [
-    `📄 **Document Summary for ${filename}**
-
-**Key Highlights:**
-• This document contains comprehensive information across multiple sections
-• Primary focus areas include strategic planning, implementation guidelines, and best practices
-• Contains detailed analysis with supporting data and evidence-based recommendations
-
-**Main Sections:**
-1. **Executive Summary** - Overview of key findings and recommendations
-2. **Methodology** - Systematic approach and frameworks utilized
-3. **Analysis & Results** - Data-driven insights and performance metrics
-4. **Recommendations** - Actionable strategies for implementation
-5. **Conclusion** - Summary of outcomes and next steps
-
-**Critical Points:**
-• Emphasizes data-driven decision making and strategic alignment
-• Provides clear timelines and milestone tracking mechanisms
-• Includes risk assessment and mitigation strategies
-• Offers scalable solutions adaptable to various scenarios
-
-**Impact & Value:**
-The document presents a well-structured approach to achieving organizational objectives through systematic implementation of proven methodologies and best practices.`,
-
-    `📋 **AI-Generated Summary for ${filename}**
-
-**Document Overview:**
-This comprehensive document presents a detailed examination of key topics with practical applications and strategic insights.
-
-**Core Components:**
-• **Introduction & Context** - Background information and scope definition
-• **Technical Analysis** - In-depth evaluation of processes and systems
-• **Implementation Framework** - Step-by-step execution guidelines
-• **Performance Metrics** - Measurement criteria and success indicators
-
-**Key Findings:**
-✓ Demonstrates strong alignment with industry standards
-✓ Provides evidence-based recommendations for improvement
-✓ Offers practical solutions to common challenges
-✓ Includes comprehensive risk management strategies
-
-**Actionable Insights:**
-The document emphasizes the importance of systematic planning, continuous monitoring, and adaptive management approaches to ensure successful outcomes.
-
-**Recommendations:**
-• Prioritize implementation based on impact and feasibility
-• Establish clear communication channels across all stakeholders
-• Develop robust monitoring and evaluation frameworks
-• Maintain flexibility to adapt to changing requirements
-
-This summary captures the essential elements while maintaining focus on practical application and strategic value.`,
-
-    `🚀 **Professional Summary for ${filename}**
-
-**Executive Overview:**
-This document delivers a comprehensive analysis with actionable insights and strategic recommendations for operational excellence.
-
-**Document Structure:**
-• **Strategic Framework** - Core principles and methodological approaches
-• **Implementation Roadmap** - Detailed execution plans with timelines
-• **Risk Management** - Comprehensive mitigation strategies and contingency plans
-• **Performance Analytics** - Key metrics and success measurement criteria
-
-**Key Insights:**
-• Demonstrates innovative approaches to complex challenges
-• Provides scalable solutions with proven effectiveness
-• Emphasizes sustainable practices and long-term value creation
-• Incorporates industry best practices and emerging trends
-
-**Actionable Recommendations:**
-1. Establish clear governance structures and accountability frameworks
-2. Implement robust monitoring and continuous improvement processes
-3. Foster stakeholder engagement and collaborative partnerships
-4. Leverage technology and data analytics for informed decision-making
-
-**Value Proposition:**
-The document presents a strategic blueprint for achieving sustainable growth and operational excellence through systematic implementation of evidence-based practices and innovative solutions.`
-  ]
-
-  return summaries[Math.floor(Math.random() * summaries.length)]
 }
