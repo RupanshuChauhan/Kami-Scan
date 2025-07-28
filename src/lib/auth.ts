@@ -13,6 +13,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
+  pages: {
+    signIn: '/',
+    error: '/',
+  },
   callbacks: {
     async session({ session, user }) {
       if (session.user) {
@@ -77,6 +81,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: 'database',
   },
   secret: process.env.AUTH_SECRET,
+  trustHost: true,
 })
 
 export const authConfig = {
