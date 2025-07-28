@@ -11,6 +11,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   pages: {
@@ -47,24 +48,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async signIn({ user, account }) {
       if (account?.provider === 'google') {
-        // Set admin status for the specified email
-        const isAdmin = user.email === process.env.ADMIN_EMAIL
-        
-        // Update or create user with admin status
-        await prisma.user.upsert({
-          where: { email: user.email! },
-          update: {
-            isAdmin,
-            name: user.name,
-            image: user.image,
-          },
-          create: {
-            email: user.email!,
-            name: user.name,
-            image: user.image,
-            isAdmin,
+        try {
+          // Set admin status for the specified email
+          const isAdmin = user.email === process.env.ADMIN_EMAIL
+          
+          // Check if user already exists
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! }
+          })
+          
+          if (existingUser) {
+            // Update existing user
+            await prisma.user.update({
+              where: { email: user.email! },
+              data: {
+                isAdmin,
+                name: user.name,
+                image: user.image,
+              }
+            })
+          } else {
+            // Create new user
+            await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name,
+                image: user.image,
+                isAdmin,
+              }
+            })
           }
-        })
+        } catch (error) {
+          console.error('Error updating user:', error)
+          // Continue with sign in even if user update fails
+        }
       }
       return true
     },
