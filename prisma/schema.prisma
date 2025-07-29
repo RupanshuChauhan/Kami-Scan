@@ -61,6 +61,8 @@ model User {
   securityForm  SecurityForm?
   pdfProcessing PDFProcessing[]
   payments      Payment[]
+  chatSessions  ChatSession[]
+  chatMessages  ChatMessage[]
 }
 
 model SecurityForm {
@@ -84,9 +86,36 @@ model PDFProcessing {
   fileName    String
   fileSize    Int
   summary     String   @db.Text
+  metadata    Json?    // Store additional processing metadata
   processedAt DateTime @default(now())
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChatSession {
+  id           String        @id @default(cuid())
+  userId       String
+  pdfId        String
+  title        String
+  metadata     Json?
+  createdAt    DateTime      @default(now())
+  lastActivity DateTime      @default(now())
+  
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id            String      @id @default(cuid())
+  sessionId     String
+  userId        String
+  role          String      // 'user', 'assistant', 'system'
+  content       String      @db.Text
+  metadata      Json?       // Store citations, reactions, etc.
+  createdAt     DateTime    @default(now())
+  
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Payment {
