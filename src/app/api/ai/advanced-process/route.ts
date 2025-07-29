@@ -94,12 +94,10 @@ export async function POST(request: NextRequest) {
         }
       ],
       metadata: {
+        fileName: file.name,
         processingTime: Date.now() - startTime,
-        aiModel: 'gemini-1.5-flash',
-        timestamp: new Date(),
-        fileSize: buffer.length,
-        pageCount,
-        fileName: file.name
+        wordCount: extractedText.split(' ').length,
+        pageCount
       }
     }
 

@@ -199,8 +199,8 @@ Respond in JSON format:
               role: 'assistant',
               content: fullResponse,
               metadata: {
-                citations,
-                suggestions,
+                citations: JSON.parse(JSON.stringify(citations)),
+                suggestions: JSON.parse(JSON.stringify(suggestions)),
                 confidence,
                 processingTime,
                 model: 'gemini-1.5-flash',

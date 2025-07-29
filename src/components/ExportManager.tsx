@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Download, FileText, Share2, Copy, Mail, Link2, 
   FileImage, FileSpreadsheet, FileCode2, Check,
-  Globe, BookOpen, Bookmark, Star
+  Bookmark
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -320,7 +320,7 @@ export default function ExportManager({
                             name="template"
                             value={value}
                             checked={exportOptions.template === value}
-                            onChange={(e) => setExportOptions(prev => ({ ...prev, template: e.target.value as any }))}
+                            onChange={(e) => setExportOptions(prev => ({ ...prev, template: e.target.value as 'standard' | 'academic' | 'business' | 'presentation' }))}
                             className="text-blue-600"
                           />
                           <div>
@@ -365,6 +365,7 @@ export default function ExportManager({
                       value={exportOptions.language}
                       onChange={(e) => setExportOptions(prev => ({ ...prev, language: e.target.value }))}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      aria-label="Select export language"
                     >
                       <option value="en">English</option>
                       <option value="es">Spanish</option>

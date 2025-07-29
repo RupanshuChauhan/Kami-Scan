@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useSession } from 'next-auth/react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { motion } from 'framer-motion'
 import { 
   BarChart, TrendingUp, FileText, Clock, Zap, Users, Brain,
-  Calendar, Download, Share2, Filter, MoreVertical, ArrowUp,
+  Download, Share2, ArrowUp,
   ArrowDown, Target, Activity, PieChart, LineChart, Globe,
   Bookmark, Star, Eye, MessageSquare
 } from 'lucide-react'
@@ -51,7 +50,7 @@ interface MetricCardProps {
   subtitle?: string
 }
 
-function MetricCard({ title, value, change, icon: Icon, color, trend, subtitle }: MetricCardProps) {
+function MetricCard({ title, value, change, icon: Icon, color, subtitle }: MetricCardProps) {
   return (
     <motion.div
       className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
@@ -163,18 +162,12 @@ function SimpleChart({ data, type, className = '' }: ChartProps) {
 }
 
 export default function AnalyticsDashboard() {
-  const { data: session } = useSession()
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month')
-  const [selectedMetric, setSelectedMetric] = useState<string>('overview')
   const [refreshing, setRefreshing] = useState(false)
 
-  useEffect(() => {
-    fetchAnalytics()
-  }, [timeRange])
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setRefreshing(true)
       const response = await fetch(`/api/analytics?range=${timeRange}`)
@@ -192,7 +185,11 @@ export default function AnalyticsDashboard() {
       setLoading(false)
       setRefreshing(false)
     }
-  }
+  }, [timeRange])
+
+  useEffect(() => {
+    fetchAnalytics()
+  }, [fetchAnalytics])
 
   const exportData = async (format: 'csv' | 'pdf' | 'excel') => {
     try {
@@ -300,7 +297,10 @@ export default function AnalyticsDashboard() {
             </button>
             
             <div className="relative group">
-              <button className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+              <button 
+                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                aria-label="Download analytics data"
+              >
                 <Download size={16} />
               </button>
               

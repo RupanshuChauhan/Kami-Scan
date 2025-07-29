@@ -85,10 +85,6 @@ export default function PdfChat({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  useEffect(() => {
-    initializeChatSession()
-  }, [pdfId, initializeChatSession])
-
   const initializeChatSession = useCallback(async () => {
     try {
       const response = await fetch('/api/ai/chat-session', {
@@ -120,6 +116,10 @@ export default function PdfChat({
       toast.error('Failed to start chat session')
     }
   }, [pdfId, pdfTitle, suggestions, onSessionCreate])
+
+  useEffect(() => {
+    initializeChatSession()
+  }, [initializeChatSession])
 
   const sendMessage = useCallback(async (messageText?: string) => {
     const messageContent = messageText || input.trim()
@@ -262,8 +262,8 @@ export default function PdfChat({
           ? { 
               ...msg, 
               reactions: { 
-                ...msg.reactions, 
-                [reaction]: !msg.reactions?.[reaction] 
+                helpful: reaction === 'helpful' ? !(msg.reactions?.helpful || false) : (msg.reactions?.helpful || false),
+                saved: reaction === 'saved' ? !(msg.reactions?.saved || false) : (msg.reactions?.saved || false)
               }
             }
           : msg
@@ -313,7 +313,10 @@ export default function PdfChat({
             <Search size={16} />
           </button>
           
-          <button className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">
+          <button 
+            className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+            aria-label="More options"
+          >
             <MoreVertical size={16} />
           </button>
         </div>
@@ -491,8 +494,8 @@ export default function PdfChat({
               <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
                 <div className="flex gap-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.1s]"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
                 </div>
               </div>
             </motion.div>

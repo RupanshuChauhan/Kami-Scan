@@ -6,8 +6,8 @@ import { useDropzone } from 'react-dropzone'
 import { useSession } from 'next-auth/react'
 import { 
   Upload, FileText, Brain, Languages, BarChart3, 
-  Zap, Clock, CheckCircle, AlertCircle, Download,
-  MessageSquare, Share2, Eye, Settings 
+  Zap, Clock, CheckCircle, Download,
+  MessageSquare, Share2, Eye 
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -30,10 +30,9 @@ interface ProcessingResult {
   confidence: number
   citations: Array<{ page: number; text: string; relevance: number }>
   metadata: {
+    fileName?: string
     processingTime: number
-    aiModel: string
-    timestamp: Date
-    fileSize: number
+    wordCount: number
     pageCount: number
   }
   exportUrls?: {
@@ -64,32 +63,9 @@ export default function AdvancedPdfProcessor({
     complexity: 'detailed',
     focusAreas: []
   })
-  const [results, setResults] = useState<ProcessingResult[]>([])
   const [activeResult, setActiveResult] = useState<ProcessingResult | null>(null)
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0]
-    if (!file) return
-
-    if (file.size > 50 * 1024 * 1024) { // 50MB limit
-      toast.error('File size must be less than 50MB')
-      return
-    }
-
-    await processDocument(file)
-  }, [options])
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
-    },
-    multiple: false
-  })
-
-  const processDocument = async (file: File) => {
+  const processDocument = useCallback(async (file: File) => {
     if (!session?.user) {
       toast.error('Please sign in to process documents')
       return
@@ -132,7 +108,6 @@ export default function AdvancedPdfProcessor({
 
       const result = await response.json()
       
-      setResults(prev => [result, ...prev])
       setActiveResult(result)
       onProcessComplete?.(result)
       
@@ -146,7 +121,29 @@ export default function AdvancedPdfProcessor({
       setProgress(0)
       setCurrentStep('')
     }
-  }
+  }, [session?.user, options, onProcessComplete])
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0]
+    if (!file) return
+
+    if (file.size > 50 * 1024 * 1024) { // 50MB limit
+      toast.error('File size must be less than 50MB')
+      return
+    }
+
+    await processDocument(file)
+  }, [processDocument])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+    },
+    multiple: false
+  })
 
   const processingTypes = [
     {
@@ -240,7 +237,7 @@ export default function AdvancedPdfProcessor({
             {exportFormats.map(({ format, label, icon: Icon }) => (
               <button
                 key={format}
-                onClick={() => setOptions(prev => ({ ...prev, outputFormat: format as any }))}
+                onClick={() => setOptions(prev => ({ ...prev, outputFormat: format as 'text' | 'bullets' | 'outline' | 'mindmap' | 'flashcards' }))}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
                   options.outputFormat === format
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
@@ -267,7 +264,7 @@ export default function AdvancedPdfProcessor({
             ].map(({ value, label, desc }) => (
               <button
                 key={value}
-                onClick={() => setOptions(prev => ({ ...prev, complexity: value as any }))}
+                onClick={() => setOptions(prev => ({ ...prev, complexity: value as 'simple' | 'detailed' | 'expert' }))}
                 className={`flex-1 p-3 rounded-lg border transition-all text-center ${
                   options.complexity === value
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
@@ -386,10 +383,16 @@ export default function AdvancedPdfProcessor({
                   Confidence: {activeResult.confidence}%
                 </span>
                 <div className="flex gap-2">
-                  <button className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
+                  <button 
+                    className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                    aria-label="Download result"
+                  >
                     <Download size={16} />
                   </button>
-                  <button className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors">
+                  <button 
+                    className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+                    aria-label="Share result"
+                  >
                     <Share2 size={16} />
                   </button>
                 </div>

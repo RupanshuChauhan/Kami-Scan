@@ -71,16 +71,19 @@ export async function POST(request: NextRequest) {
         messageCount: chatSession.messages.length,
         lastActivity: chatSession.lastActivity
       },
-      messages: chatSession.messages.map(msg => ({
-        id: msg.id,
-        role: msg.role,
-        content: msg.content,
-        timestamp: msg.createdAt,
-        citations: msg.metadata?.citations || [],
-        metadata: msg.metadata?.processingData || {},
-        reactions: msg.metadata?.reactions || {},
-        suggestions: msg.metadata?.suggestions || []
-      }))
+      messages: chatSession.messages.map(msg => {
+        const metadata = msg.metadata as Record<string, unknown> | null
+        return {
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.createdAt,
+          citations: (metadata?.citations as Array<{ page: number; text: string; relevance: number }>) || [],
+          metadata: (metadata?.processingData as Record<string, unknown>) || {},
+          reactions: (metadata?.reactions as Record<string, boolean>) || {},
+          suggestions: (metadata?.suggestions as string[]) || []
+        }
+      })
     })
 
   } catch (error) {

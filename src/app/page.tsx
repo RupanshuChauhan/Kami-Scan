@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from 'next-auth/react'
 import { 
-  Brain, Zap, Globe, Users, BarChart3, MessageSquare,
-  FileText, Download, Share2, Star, ArrowRight, CheckCircle,
-  Sparkles, Target, Clock, Shield, Lightbulb, Rocket
+  Brain, Zap, Globe, BarChart3, MessageSquare,
+  FileText, Download, Star, ArrowRight, CheckCircle,
+  Sparkles, Target, Clock, Shield, Rocket
 } from 'lucide-react'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
@@ -27,12 +27,10 @@ interface ProcessingResult {
   confidence: number
   citations: Array<{ page: number; text: string; relevance: number }>
   metadata: {
-    processingTime: number
-    aiModel: string
-    timestamp: Date
-    fileSize: number
-    pageCount: number
     fileName?: string
+    processingTime: number
+    wordCount: number
+    pageCount: number
   }
 }
 
@@ -245,7 +243,7 @@ export default function HomePage() {
               {tabs.map((tab) => (
                 <motion.button
                   key={tab.id}
-                  onClick={() => !tab.disabled && setActiveTab(tab.id as any)}
+                  onClick={() => !tab.disabled && setActiveTab(tab.id as 'process' | 'chat' | 'analytics')}
                   className={`flex items-center gap-3 px-6 py-4 rounded-xl font-medium transition-all ${
                     activeTab === tab.id
                       ? 'bg-white text-purple-600 shadow-lg'
@@ -294,7 +292,7 @@ export default function HomePage() {
                           <h3 className="text-xl font-semibold">Processing Results</h3>
                           <ExportManager 
                             result={processingResult}
-                            onExport={(format, url) => {
+                            onExport={(format) => {
                               toast.success(`Exported as ${format.toUpperCase()}`)
                             }}
                           />
