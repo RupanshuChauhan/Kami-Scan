@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 interface ProcessingOptions {
   type: 'summary' | 'qa' | 'translate' | 'analyze' | 'extract' | 'compare'
@@ -159,6 +160,45 @@ export async function POST(request: NextRequest) {
         wordCount: mockResult.wordCount,
         processingTime: mockResult.metadata.processingTime
       })
+
+      // Save processing result to database
+      try {
+        // Get user info first
+        const user = await prisma.user.findUnique({
+          where: { email: session.user.email },
+          select: { id: true }
+        })
+
+        if (user) {
+          await prisma.pDFProcessing.create({
+            data: {
+              userId: user.id,
+              fileName: file.name,
+              fileSize: file.size,
+              summary: mockResult.summary,
+              metadata: {
+                processingType: options.type,
+                wordCount: wordCount,
+                processingTime: processingTime,
+                confidence: mockResult.confidence
+              }
+            }
+          })
+
+          // Increment user usage count
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              usageCount: { increment: 1 }
+            }
+          })
+
+          console.log('POST /api/ai/advanced-process - Result saved to database')
+        }
+      } catch (dbError) {
+        console.error('POST /api/ai/advanced-process - Database save error:', dbError)
+        // Continue even if database save fails
+      }
 
       return NextResponse.json(mockResult)
     } catch (resultError) {

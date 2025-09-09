@@ -1,4 +1,14 @@
 {
     "WillLuke.nextjs.addTypesOnSave": true,
-    "WillLuke.nextjs.hasPrompted": true
+    "WillLuke.nextjs.hasPrompted": true,
+    "cSpell.words": [
+        "genai",
+        "mindmap",
+        "msword",
+        "NEXTAUTH",
+        "numpages",
+        "officedocument",
+        "openxmlformats",
+        "wordprocessingml"
+    ]
 }

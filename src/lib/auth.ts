@@ -1,9 +1,7 @@
 import NextAuth from "next-auth"
 import Google from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import { prisma } from "./prisma"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -50,7 +48,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === 'google') {
         try {
           // Set admin status for the specified email
-          const isAdmin = user.email === process.env.ADMIN_EMAIL
+          const isAdmin = user.email === 'vaivhavchauhan2162003@gmail.com'
           
           // Check if user already exists
           const existingUser = await prisma.user.findUnique({
@@ -97,7 +95,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: 'database',
   },
-  secret: process.env.AUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
 })
 

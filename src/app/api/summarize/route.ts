@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getConfig } from '@/lib/config'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 // Initialize Gemini AI with config validation
 const config = getConfig()
@@ -76,6 +78,54 @@ export async function POST(request: NextRequest) {
   try {
     // Add comprehensive error handling and logging
     console.log('POST /api/summarize - Request received')
+    
+    // Check authentication
+    const session = await auth()
+    if (!session?.user?.email) {
+      console.log('POST /api/summarize - No authenticated user')
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+    
+    // Check user usage limits
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      select: { 
+        id: true, 
+        usageCount: true, 
+        usageLimit: true, 
+        subscription: true,
+        lastResetDate: true
+      }
+    })
+    
+    if (!user) {
+      console.log('POST /api/summarize - User not found')
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    
+    // Check if usage limit is exceeded
+    const now = new Date()
+    const lastReset = new Date(user.lastResetDate)
+    const daysSinceReset = Math.floor((now.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24))
+    
+    // Reset monthly usage if more than 30 days have passed
+    if (daysSinceReset >= 30) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          usageCount: 0,
+          lastResetDate: now
+        }
+      })
+      user.usageCount = 0
+    }
+    
+    if (user.usageCount >= user.usageLimit && user.subscription === 'free') {
+      console.log('POST /api/summarize - Usage limit exceeded')
+      return NextResponse.json({ 
+        error: `Monthly usage limit (${user.usageLimit}) exceeded. Please upgrade your plan.` 
+      }, { status: 429 })
+    }
     
     // Validate request body exists
     if (!request.body) {
@@ -236,6 +286,37 @@ export async function POST(request: NextRequest) {
     const aiSummary = result.response.text()
 
     console.log('POST /api/summarize - AI summary generated successfully')
+
+    // Save processing result to database
+    try {
+      await prisma.pDFProcessing.create({
+        data: {
+          userId: user.id,
+          fileName: file.name,
+          fileSize: file.size,
+          summary: aiSummary,
+          metadata: {
+            textLength: extractedText.length,
+            parseMethod: parseMethod,
+            processingTime: Date.now() - startTime,
+            aiPowered: true
+          }
+        }
+      })
+
+      // Increment user usage count
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          usageCount: { increment: 1 }
+        }
+      })
+
+      console.log('POST /api/summarize - Processing result saved to database')
+    } catch (dbError) {
+      console.error('POST /api/summarize - Database save error:', dbError)
+      // Continue even if database save fails
+    }
 
     return NextResponse.json({
       summary: aiSummary,
