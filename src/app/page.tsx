@@ -14,6 +14,7 @@ import AdvancedPdfProcessor from '../components/AdvancedPdfProcessor'
 import PdfChat from '../components/PdfChat'
 import AnalyticsDashboard from '../components/AnalyticsDashboard'
 import ExportManager from '../components/ExportManager'
+import ProcessingErrorBoundary from '../components/ProcessingErrorBoundary'
 import toast from 'react-hot-toast'
 
 interface ProcessingResult {
@@ -35,7 +36,7 @@ interface ProcessingResult {
 }
 
 export default function HomePage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [activeTab, setActiveTab] = useState<'process' | 'chat' | 'analytics'>('process')
   const [processingResult, setProcessingResult] = useState<ProcessingResult | null>(null)
   const [showFeatures, setShowFeatures] = useState(false)
@@ -44,15 +45,21 @@ export default function HomePage() {
     timesSaved: 0,
     accuracyRate: 0
   })
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    if (status === 'loading') return // Still loading
+    
     if (session?.user) {
       fetchUserStats()
+    } else {
+      setIsLoading(false)
     }
-  }, [session])
+  }, [session, status])
 
   const fetchUserStats = async () => {
     try {
+      setIsLoading(true)
       const response = await fetch('/api/user/stats')
       if (response.ok) {
         const stats = await response.json()
@@ -60,6 +67,14 @@ export default function HomePage() {
       }
     } catch (error) {
       console.error('Failed to fetch user stats:', error)
+      // Set default stats on error
+      setUserStats({
+        totalProcessed: 0,
+        timesSaved: 0,
+        accuracyRate: 0
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -130,6 +145,18 @@ export default function HomePage() {
       description: 'Usage insights and trends' 
     }
   ]
+
+  // Show loading state while session is being determined
+  if (status === 'loading' || isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-purple-300">Loading KamiScan...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900">
@@ -279,7 +306,9 @@ export default function HomePage() {
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <AdvancedPdfProcessor onProcessComplete={handleProcessComplete} />
+                  <ProcessingErrorBoundary>
+                    <AdvancedPdfProcessor onProcessComplete={handleProcessComplete} />
+                  </ProcessingErrorBoundary>
                   
                   {processingResult && (
                     <motion.div
@@ -310,7 +339,7 @@ export default function HomePage() {
                             <div>
                               <h4 className="font-semibold mb-3">Key Points</h4>
                               <ul className="space-y-2">
-                                {processingResult.keyPoints.map((point, index) => (
+                                {(processingResult.keyPoints || []).map((point, index) => (
                                   <li key={index} className="flex items-start gap-3">
                                     <CheckCircle size={16} className="text-green-500 mt-1 flex-shrink-0" />
                                     <span className="text-gray-700">{point}</span>
@@ -326,7 +355,7 @@ export default function HomePage() {
                                 <Target size={16} className="text-blue-600" />
                                 <span className="font-medium text-blue-900">Confidence</span>
                               </div>
-                              <div className="text-2xl font-bold text-blue-600">{processingResult.confidence}%</div>
+                              <div className="text-2xl font-bold text-blue-600">{processingResult.confidence || 0}%</div>
                             </div>
                             
                             <div className="bg-green-50 rounded-lg p-4">
@@ -334,7 +363,7 @@ export default function HomePage() {
                                 <Clock size={16} className="text-green-600" />
                                 <span className="font-medium text-green-900">Reading Time</span>
                               </div>
-                              <div className="text-2xl font-bold text-green-600">{processingResult.readingTime}m</div>
+                              <div className="text-2xl font-bold text-green-600">{processingResult.readingTime || 0}m</div>
                             </div>
                             
                             <div className="bg-purple-50 rounded-lg p-4">
@@ -342,7 +371,7 @@ export default function HomePage() {
                                 <FileText size={16} className="text-purple-600" />
                                 <span className="font-medium text-purple-900">Word Count</span>
                               </div>
-                              <div className="text-2xl font-bold text-purple-600">{processingResult.wordCount.toLocaleString()}</div>
+                              <div className="text-2xl font-bold text-purple-600">{processingResult.wordCount?.toLocaleString() || 0}</div>
                             </div>
                             
                             <div className="bg-orange-50 rounded-lg p-4">
@@ -350,16 +379,16 @@ export default function HomePage() {
                                 <Zap size={16} className="text-orange-600" />
                                 <span className="font-medium text-orange-900">Processing Time</span>
                               </div>
-                              <div className="text-2xl font-bold text-orange-600">{processingResult.metadata.processingTime}ms</div>
+                              <div className="text-2xl font-bold text-orange-600">{processingResult.metadata?.processingTime || 0}ms</div>
                             </div>
                           </div>
                         </div>
                         
-                        {processingResult.topics.length > 0 && (
+                        {(processingResult.topics || []).length > 0 && (
                           <div className="mt-6 pt-6 border-t">
                             <h4 className="font-semibold mb-3">Topics</h4>
                             <div className="flex flex-wrap gap-2">
-                              {processingResult.topics.map((topic, index) => (
+                              {(processingResult.topics || []).map((topic, index) => (
                                 <span
                                   key={index}
                                   className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"

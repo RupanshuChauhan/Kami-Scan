@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { getConfig } from '@/lib/config'
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+// Initialize Gemini AI with config validation
+const config = getConfig()
+const genAI = config.config.GEMINI_API_KEY ? new GoogleGenerativeAI(config.config.GEMINI_API_KEY) : null
 
 // Enhanced PDF parsing with better error handling
 async function parsePDF(buffer: Buffer) {
@@ -69,48 +71,87 @@ For best results, use PDFs that contain actual text rather than scanned images. 
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  
   try {
-    const formData = await request.formData()
+    // Add comprehensive error handling and logging
+    console.log('POST /api/summarize - Request received')
+    
+    // Validate request body exists
+    if (!request.body) {
+      console.log('POST /api/summarize - No request body')
+      return NextResponse.json({ error: 'No request body provided' }, { status: 400 })
+    }
+    
+    let formData: FormData
+    try {
+      formData = await request.formData()
+    } catch (formDataError) {
+      console.error('POST /api/summarize - FormData parsing error:', formDataError)
+      return NextResponse.json({ error: 'Invalid form data' }, { status: 400 })
+    }
+    
     const file = formData.get('file') as File
 
     if (!file) {
+      console.log('POST /api/summarize - No file provided')
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
     }
 
     if (file.type !== 'application/pdf') {
+      console.log('POST /api/summarize - Invalid file type:', file.type)
       return NextResponse.json({ error: 'Only PDF files are allowed' }, { status: 400 })
     }
 
     // Check file size (limit to 10MB)
     if (file.size > 10 * 1024 * 1024) {
+      console.log('POST /api/summarize - File too large:', file.size)
       return NextResponse.json({ 
         error: 'File too large. Please upload a PDF smaller than 10MB.' 
       }, { status: 400 })
     }
 
+    console.log('POST /api/summarize - Processing file:', file.name, 'Size:', file.size)
+
     // Convert file to buffer for PDF parsing
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    let arrayBuffer: ArrayBuffer
+    let buffer: Buffer
+    
+    try {
+      arrayBuffer = await file.arrayBuffer()
+      buffer = Buffer.from(arrayBuffer)
+    } catch (bufferError) {
+      console.error('POST /api/summarize - Buffer conversion error:', bufferError)
+      return NextResponse.json(
+        { error: 'Failed to process file data. Please try uploading the file again.' },
+        { status: 400 }
+      )
+    }
 
     let extractedText = ''
     let parseMethod = 'unknown'
 
     // Try primary PDF parsing method
     try {
+      console.log('POST /api/summarize - Attempting PDF parsing...')
       const pdfData = await parsePDF(buffer)
       extractedText = pdfData.text
       parseMethod = 'pdf-parse'
+      console.log('POST /api/summarize - PDF parsing successful, extracted', extractedText.length, 'characters')
     } catch (primaryError) {
-      console.log('Primary PDF parsing failed, trying fallback method...', primaryError)
+      console.log('POST /api/summarize - Primary PDF parsing failed:', primaryError)
       
       // Try fallback text extraction
       try {
+        console.log('POST /api/summarize - Attempting fallback parsing...')
         extractedText = extractTextFallback(buffer)
         parseMethod = 'fallback'
+        console.log('POST /api/summarize - Fallback parsing successful')
       } catch (fallbackError) {
-        console.log('Fallback parsing also failed:', fallbackError)
+        console.log('POST /api/summarize - Fallback parsing also failed:', fallbackError)
         
         // Final fallback: Generate a demo summary based on filename if all parsing fails
+        console.log('POST /api/summarize - Using demo mode')
         const demoSummary = generateDemoSummary(file.name)
         return NextResponse.json({
           summary: demoSummary,
@@ -127,10 +168,13 @@ export async function POST(request: NextRequest) {
 
     // Validate extracted text
     if (!extractedText || extractedText.trim().length < 10) {
+      console.log('POST /api/summarize - Insufficient text extracted:', extractedText?.length || 0)
       return NextResponse.json({ 
         error: 'The PDF appears to contain very little text or may be image-based. Please ensure your PDF contains readable text content.' 
       }, { status: 400 })
     }
+
+    console.log('POST /api/summarize - Text validation passed')
 
     // Clean and prepare text for AI processing
     const cleanedText = extractedText
@@ -138,7 +182,26 @@ export async function POST(request: NextRequest) {
       .replace(/[^\w\s.,!?;:()\-"']/g, '') // Remove special characters
       .trim()
 
+    console.log('POST /api/summarize - Text cleaned, length:', cleanedText.length)
+
+    // Check if Gemini API key is available
+    if (!config.config.GEMINI_API_KEY || !genAI) {
+      console.log('POST /api/summarize - GEMINI_API_KEY not found, using demo summary')
+      const demoSummary = generateDemoSummary(file.name)
+      return NextResponse.json({
+        summary: demoSummary,
+        originalFileName: file.name,
+        fileSize: file.size,
+        textLength: extractedText.length,
+        parseMethod: 'demo-no-api-key',
+        processedAt: new Date().toISOString(),
+        aiPowered: false,
+        note: 'Demo mode: API key not configured. Showing sample output.'
+      })
+    }
+
     // Generate AI summary using Gemini
+    console.log('POST /api/summarize - Generating AI summary...')
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
     
     const prompt = `Please provide a comprehensive and professional summary of the following document text. 
@@ -172,6 +235,8 @@ export async function POST(request: NextRequest) {
     const result = await model.generateContent(prompt)
     const aiSummary = result.response.text()
 
+    console.log('POST /api/summarize - AI summary generated successfully')
+
     return NextResponse.json({
       summary: aiSummary,
       originalFileName: file.name,
@@ -179,14 +244,17 @@ export async function POST(request: NextRequest) {
       textLength: extractedText.length,
       parseMethod: parseMethod,
       processedAt: new Date().toISOString(),
+      processingTime: Date.now() - startTime,
       aiPowered: true
     })
 
   } catch (error) {
-    console.error('Error processing PDF:', error)
+    console.error('POST /api/summarize - Error processing PDF:', error)
     
     // Provide specific error messages based on error type
     if (error instanceof Error) {
+      console.error('POST /api/summarize - Error details:', error.message, error.stack)
+      
       if (error.message.includes('API_KEY') || error.message.includes('genai')) {
         return NextResponse.json(
           { error: 'AI service temporarily unavailable. Please try again in a moment.' },
@@ -200,6 +268,12 @@ export async function POST(request: NextRequest) {
           { status: 429 }
         )
       }
+      
+      // For any other error, return a generic message but log the details
+      return NextResponse.json(
+        { error: `Processing failed: ${error.message}. Please ensure the file is a valid PDF and try again.` },
+        { status: 500 }
+      )
     }
     
     return NextResponse.json(

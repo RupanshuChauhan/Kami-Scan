@@ -30,23 +30,38 @@ export default function PDFUploader() {
       const formData = new FormData()
       formData.append('file', file)
 
+      console.log('PDFUploader: Sending request to /api/summarize')
+      
       const response = await fetch('/api/summarize', {
         method: 'POST',
         body: formData,
       })
 
+      console.log('PDFUploader: Response received', response.status, response.statusText)
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(errorData.error || 'Failed to process PDF')
+        const errorText = await response.text()
+        console.error('PDFUploader: Error response text:', errorText)
+        
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { error: errorText || 'Unknown error' }
+        }
+        
+        throw new Error(errorData.error || `Server error: ${response.status}`)
       }
 
       const result = await response.json()
-      setSummary(result.summary)
+      console.log('PDFUploader: Success response:', result)
+      
+      setSummary(result.summary || 'No summary available')
       toast.success('✅ PDF processed successfully!', { id: 'processing' })
     } catch (error) {
+      console.error('PDFUploader: Error processing PDF:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to process PDF. Please try again.'
       toast.error(`❌ ${errorMessage}`, { id: 'processing' })
-      console.error('Error processing PDF:', error)
     } finally {
       setIsProcessing(false)
     }

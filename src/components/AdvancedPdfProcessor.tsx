@@ -80,14 +80,28 @@ export default function AdvancedPdfProcessor({
     formData.append('options', JSON.stringify(options))
 
     try {
+      console.log('AdvancedPdfProcessor: Starting processing with options:', options)
+      
       const response = await fetch('/api/ai/advanced-process', {
         method: 'POST',
         body: formData,
       })
 
+      console.log('AdvancedPdfProcessor: Response received', response.status, response.statusText)
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Processing failed')
+        const errorText = await response.text()
+        console.error('AdvancedPdfProcessor: Error response text:', errorText)
+        
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch (parseError) {
+          console.error('AdvancedPdfProcessor: Failed to parse error response:', parseError)
+          errorData = { error: errorText || 'Unknown error' }
+        }
+        
+        throw new Error(errorData.error || errorData.message || `Server error: ${response.status}`)
       }
 
       // Simulate real-time progress updates
@@ -106,7 +120,28 @@ export default function AdvancedPdfProcessor({
         await new Promise(resolve => setTimeout(resolve, 800))
       }
 
-      const result = await response.json()
+      const data = await response.json()
+      console.log('AdvancedPdfProcessor: Response data:', data)
+      
+      const result = data.result || data  // Handle both response formats
+      
+      // Validate result has required properties
+      if (!result || typeof result !== 'object') {
+        throw new Error('Invalid response format from server')
+      }
+      
+      // Ensure required arrays exist
+      if (!Array.isArray(result.keyPoints)) {
+        result.keyPoints = []
+      }
+      if (!Array.isArray(result.topics)) {
+        result.topics = []
+      }
+      if (!Array.isArray(result.citations)) {
+        result.citations = []
+      }
+      
+      console.log('AdvancedPdfProcessor: Validated result:', result)
       
       setActiveResult(result)
       onProcessComplete?.(result)
@@ -380,7 +415,7 @@ export default function AdvancedPdfProcessor({
               <h3 className="text-xl font-semibold text-gray-900">Processing Results</h3>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">
-                  Confidence: {activeResult.confidence}%
+                  Confidence: {activeResult.confidence || 0}%
                 </span>
                 <div className="flex gap-2">
                   <button 
@@ -412,7 +447,7 @@ export default function AdvancedPdfProcessor({
               <div>
                 <h4 className="font-semibold text-gray-900 mb-3">Key Points</h4>
                 <ul className="space-y-2">
-                  {activeResult.keyPoints.map((point, index) => (
+                  {(activeResult.keyPoints || []).map((point, index) => (
                     <li key={index} className="flex items-start gap-3">
                       <CheckCircle size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
                       <span className="text-gray-700">{point}</span>
@@ -424,19 +459,19 @@ export default function AdvancedPdfProcessor({
               {/* Metadata */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{activeResult.wordCount}</div>
+                  <div className="text-2xl font-bold text-blue-600">{activeResult.wordCount || 0}</div>
                   <div className="text-sm text-gray-500">Words</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{activeResult.readingTime}m</div>
+                  <div className="text-2xl font-bold text-green-600">{activeResult.readingTime || 0}m</div>
                   <div className="text-sm text-gray-500">Reading Time</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">{activeResult.metadata.pageCount}</div>
+                  <div className="text-2xl font-bold text-purple-600">{activeResult.metadata?.pageCount || 0}</div>
                   <div className="text-sm text-gray-500">Pages</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">{activeResult.metadata.processingTime}s</div>
+                  <div className="text-2xl font-bold text-orange-600">{Math.round((activeResult.metadata?.processingTime || 0) / 1000)}s</div>
                   <div className="text-sm text-gray-500">Processing</div>
                 </div>
               </div>
