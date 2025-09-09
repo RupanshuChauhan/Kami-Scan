@@ -25,7 +25,10 @@ export default function DebugPage() {
       timestamp: new Date().toISOString(),
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
       sessionStatus: status,
-      sessionData: session ? { email: session.user?.email, name: session.user?.name } : null,
+      sessionData: session ? { 
+        email: session.user?.email || undefined, 
+        name: session.user?.name || undefined 
+      } : null,
       windowLocation: typeof window !== 'undefined' ? window.location.href : 'unknown',
       environment: process.env.NODE_ENV,
     }
